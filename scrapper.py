@@ -17,7 +17,7 @@ def scrape_job_listings(url) -> list:
             'title': listing.find('h3').text.strip(),
             'company': listing.find('span', class_='company-name').text.strip(),
             'location': listing.find('span', class_='location').text.strip(),
-            'url': 'https://theprotocol.it' + listing.find('a')['href']
+            'url': 'https://www.pracuj.pl' + listing.find('a')['href']
         }
         jobs.append(job)
     return jobs
