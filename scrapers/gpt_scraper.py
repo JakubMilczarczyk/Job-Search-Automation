@@ -1,40 +1,54 @@
-import requests
-from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 import time
 
-# Parametry wyszukiwania
-search_keyword = "Data Engineer"
-location = "remote"  # Możesz zmienić na konkretne miasto lub 'remote' 
+# Opcje dla Chrome
+chrome_options = Options()
+chrome_options.add_argument("--headless")  # Uruchom w tle (bez GUI)
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
 
-# Nagłówki HTTP, aby symulować prawdziwą przeglądarkę
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"
-}
+# Ścieżka do chromedrivera
+service = Service("ścieżka/do/chromedriver")  # Upewnij się, że masz zainstalowanego chromedrivera
+
+# Inicjalizacja przeglądarki
+driver = webdriver.Chrome(service=service, options=chrome_options)
 
 # Adres URL No Fluff Jobs z parametrami wyszukiwania
-url = f"https://nofluffjobs.com/pl/jobs/{location}?criteria=keyword%3D{search_keyword}"
+url = f"https://nofluffjobs.com/pl/praca-zdalna/Python?criteria=city%3Dhybrid,warszawa%20%20seniority%3Dtrainee,junior"
 
-# Wykonanie żądania do strony
-response = requests.get(url, headers=headers)
-if response.status_code == 200:
-    soup = BeautifulSoup(response.text, "html.parser")
+# Przechodzimy na stronę
+driver.get(url)
+time.sleep(3)  # Czekaj na załadowanie strony
 
-    # Znalezienie wszystkich ofert
-    jobs = soup.find_all("a", class_="posting-list-item")  # klasa może się różnić, sprawdź w inspektorze przeglądarki
+# Znalezienie wszystkich ofert
+jobs = driver.find_elements(By.CLASS_NAME, "posting-list-item")  # Klasa może się różnić, sprawdź w inspektorze przeglądarki
 
-    for job in jobs:
-        # Tytuł oferty
-        title = job.find("h3", class_="posting-title__position").text.strip()
-        company = job.find("span", class_="company-name").text.strip() if job.find("span", class_="company-name") else "Brak nazwy firmy"
-        location = job.find("span", class_="location").text.strip() if job.find("span", class_="location") else "Brak lokalizacji"
-        link = "https://nofluffjobs.com" + job['href']
+for job in jobs[:3]:  # Pobieranie tylko 3 ofert
+    title_element = job.find_element(By.CLASS_NAME, "posting-title__position")
+    title = title_element.text.strip()
+    link = "https://nofluffjobs.com" + job.get_attribute('href')
 
-        print(f"Tytuł: {title}")
-        print(f"Firma: {company}")
-        print(f"Lokalizacja: {location}")
-        print(f"Link: {link}")
-        print("-----")
-        time.sleep(1)  # dodaj przerwę, aby uniknąć blokady
+    # Przechodzenie do szczegółów oferty
+    driver.get(link)
+    time.sleep(3)  # Czekaj na załadowanie szczegółów oferty
 
-else:
-    print("Nie udało się połączyć ze stroną.")
+    # Pobieranie tytułu i opisu
+    meta_title = driver.find_element(By.CSS_SELECTOR, 'meta[property="og:title"]')
+    title_and_company = meta_title.get_attribute("content") if meta_title else "Brak informacji o tytule i firmie"
+    
+    meta_description = driver.find_element(By.CSS_SELECTOR, 'meta[property="og:description"]')
+    description = meta_description.get_attribute("content") if meta_description else "Brak opisu"
+
+    print(f"Tytuł i firma: {title_and_company}")
+    print(f"Opis: {description}")
+    print(f"Link: {link}")
+    print("-----")
+
+    driver.back()  # Powrót do strony z listą ogłoszeń
+    time.sleep(3)  # Czekaj na załadowanie listy
+
+# Zamknięcie przeglądarki
+driver.quit()
