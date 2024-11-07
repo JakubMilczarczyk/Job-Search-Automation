@@ -8,6 +8,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY scrapers/ /app/scrapers/
+COPY keys/ /app/keys/
 COPY aws_configs/ /app/aws_configs/
 
-CMD ["python3", "scrapers/gpt_scraper.py"]
+CMD ["python3", "scrapers/link_jooble.py"]
