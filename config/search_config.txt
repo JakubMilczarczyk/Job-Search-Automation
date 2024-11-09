@@ -1,0 +1,3 @@
+keywords = python
+locations = Warszawa, Łódź
+job_types = remote, hybrid
